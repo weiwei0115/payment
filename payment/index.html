@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工時記錄系統</title>
+<!-- PWA manifest inline -->
+<link rel="manifest" href="data:application/json,{%22name%22:%22工時記錄系統%22,%22short_name%22:%22工時系統%22,%22display%22:%22standalone%22,%22background_color%22:%22%23f5f5f5%22,%22theme_color%22:%22%23185FA5%22}">
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="工時系統">
+<!-- Tabler Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #f4f4f2;
+    --surface: #ffffff;
+    --surface2: #f0f0ee;
+    --border: #e0e0dc;
+    --border2: #d0d0cc;
+    --text: #1a1a18;
+    --text2: #6b6b66;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --amber-mid: #FAC775;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .screen { display: none; padding: 1rem; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: block; }
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface); color: var(--text);
+    font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn.primary { background: var(--blue); color: var(--blue-light); border-color: var(--blue); }
+  .btn.primary:hover { background: var(--blue-dark); }
+  .btn.success { background: var(--green); color: var(--green-light); border-color: var(--green); }
+  .btn.success:hover { background: #27500A; }
+  .btn.danger { background: var(--red); color: var(--red-light); border-color: var(--red); }
+  .btn.danger:hover { background: #791F1F; }
+  .btn.warning { background: var(--amber); color: var(--amber-light); border-color: var(--amber); }
+  .btn.warning:hover { background: #633806; }
+  .btn.sm { width: auto; padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+  /* ── Forms ── */
+  input, select {
+    width: 100%; padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2);
+    background: var(--surface); color: var(--text);
+    font-size: 15px; margin-bottom: 10px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  input.sm-in { margin: 0; padding: 5px 8px; font-size: 13px; width: 80px; }
+  label { font-size: 13px; color: var(--text2); display: block; margin-bottom: 4px; }
+
+  /* ── Typography ── */
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 1rem; }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .meta { font-size: 13px; color: var(--text2); }
+
+  /* ── Tags & Badges ── */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .tag.in  { background: var(--green-light); color: var(--green); }
+  .tag.out { background: var(--red-light); color: var(--red); }
+  .tag.pending { background: var(--amber-light); color: var(--amber); }
+  .tag.double  { background: var(--blue-light); color: var(--blue-dark); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge.blue  { background: var(--blue-light); color: var(--blue-dark); }
+  .badge.amber { background: var(--amber-mid); color: #633806; }
+  .badge.green { background: var(--green-light); color: var(--green); }
+
+  /* ── Alerts ── */
+  .alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 12px; }
+  .alert.info    { background: var(--blue-light); color: var(--blue); }
+  .alert.success { background: var(--green-light); color: var(--green); }
+  .alert.error   { background: var(--red-light); color: var(--red); }
+
+  /* ── Nav ── */
+  .nav { display: flex; gap: 6px; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 4px; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    padding: 6px 14px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    font-size: 13px; cursor: pointer; white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .nav-btn.active { background: var(--blue); color: var(--blue-light); border-color: var(--blue); }
+
+  /* ── Section tabs ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Divider ── */
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 12px 0; }
+
+  /* ── Row layout ── */
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+  /* ── Stats grid ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .stat { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 600; }
+  .stat .lbl { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* ── Clock ── */
+  .big-time { font-size: 52px; font-weight: 700; letter-spacing: -2px; text-align: center; padding: 1rem 0; color: var(--blue); font-variant-numeric: tabular-nums; }
+
+  /* ── Employee card (expandable) ── */
+  .emp-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  .emp-card-head { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; }
+  .emp-card-head:hover { background: var(--surface2); }
+  .emp-card-body { display: none; padding: 0 12px 12px; }
+  .emp-card.open .emp-card-body { display: block; }
+
+  /* ── Avatar ── */
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--blue-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--blue-dark); flex-shrink: 0; }
+
+  /* ── Insurance table row ── */
+  .ins-row { display: grid; grid-template-columns: 1fr 80px 80px; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .ins-row:last-child { border-bottom: none; }
+  .ins-row .lbl { color: var(--text2); }
+
+  /* ── List item ── */
+  .ins-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .ins-item:last-child { border-bottom: none; }
+
+  /* ── Emp row ── */
+  .emp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .emp-row:last-child { border-bottom: none; }
+
+  /* ── Day row ── */
+  .day-row { padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .day-row:last-child { border-bottom: none; }
+  .day-head { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .day-head:hover { opacity: 0.8; }
+  .day-detail { display: none; margin-top: 8px; padding: 10px; background: var(--surface2); border-radius: var(--radius-sm); }
+  .day-row.open .day-detail { display: block; }
+
+  /* ── Week grid (double pay) ── */
+  .week-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 10px; }
+  .week-btn { padding: 6px 2px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--surface); color: var(--text2); font-size: 12px; cursor: pointer; text-align: center; transition: background 0.15s; }
+  .week-btn.on { background: var(--blue); color: var(--blue-light); border-color: var(--blue); }
+
+  /* ── Date chips ── */
+  .date-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--blue-light); color: var(--blue-dark); border-radius: 20px; font-size: 12px; margin: 3px; }
+  .date-chip button { background: none; border: none; cursor: pointer; color: var(--blue); padding: 0; font-size: 14px; line-height: 1; display: flex; align-items: center; }
+
+  /* ── Sub section ── */
+  .sub-section { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+  .group-title { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 0.5px solid var(--border); }
+
+  /* ── Saved flash ── */
+  .saved-flash { font-size: 12px; color: var(--green); display: none; margin-top: 6px; }
+
+  /* ── Register form toggle ── */
+  .tab-toggle { display: flex; border: 0.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 16px; }
+  .tab-toggle button { flex: 1; padding: 8px; border: none; background: var(--surface2); color: var(--text2); font-size: 14px; cursor: pointer; }
+  .tab-toggle button.active { background: var(--blue); color: white; }
+
+  /* ── Login hero ── */
+  .login-hero { padding-top: 2.5rem; text-align: center; margin-bottom: 2rem; }
+  .login-hero .icon-wrap { width: 72px; height: 72px; background: var(--blue); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: 0 4px 16px rgba(24,95,165,0.35); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ 登入 / 首頁 ════════════════ -->
+<div id="s-login" class="screen active">
+  <div class="login-hero">
+    <div class="icon-wrap">
+      <i class="ti ti-clock" style="font-size:36px;color:white"></i>
+    </div>
+    <h1>工時記錄系統</h1>
+    <p class="meta" style="margin-top:4px">請選擇登入身份</p>
+  </div>
+  <div class="card">
+    <button class="btn primary" style="margin-bottom:10px" onclick="showLogin('boss')">
+      <i class="ti ti-briefcase"></i> 老闆登入 / 註冊
+    </button>
+    <button class="btn" onclick="showLogin('emp')">
+      <i class="ti ti-user"></i> 員工登入 / 註冊
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════ 登入 / 註冊表單 ════════════════ -->
+<div id="s-loginform" class="screen">
+  <div style="margin-bottom:1.5rem;margin-top:1rem">
+    <button class="btn sm" onclick="go('s-login')" style="margin-bottom:1rem">
+      <i class="ti ti-arrow-left"></i> 返回
+    </button>
+    <h2 id="login-title">登入</h2>
+  </div>
+
+  <!-- 切換 登入 / 註冊 -->
+  <div class="tab-toggle">
+    <button id="tab-login" class="active" onclick="switchTab('login')">登入</button>
+    <button id="tab-reg" onclick="switchTab('reg')">註冊新帳號</button>
+  </div>
+
+  <!-- 登入表單 -->
+  <div id="form-login" class="card">
+    <label>帳號</label>
+    <input type="text" id="login-user" placeholder="請輸入帳號">
+    <label>密碼</label>
+    <input type="password" id="login-pass" placeholder="請輸入密碼">
+    <div id="login-err" class="alert error" style="display:none"></div>
+    <button class="btn primary" onclick="doLogin()">
+      <i class="ti ti-login"></i> 登入
+    </button>
+    <p class="meta" style="margin-top:10px;text-align:center">預設測試：boss/1234、emp01/1234</p>
+  </div>
+
+  <!-- 註冊表單 -->
+  <div id="form-reg" class="card" style="display:none">
+    <div id="reg-err" class="alert error" style="display:none"></div>
+    <div id="reg-ok" class="alert success" style="display:none"></div>
+    <label>姓名</label>
+    <input type="text" id="reg-name" placeholder="請輸入真實姓名">
+    <label>帳號</label>
+    <input type="text" id="reg-acc" placeholder="設定登入帳號">
+    <label>密碼</label>
+    <input type="password" id="reg-pass" placeholder="設定密碼（至少4位）">
+    <label>確認密碼</label>
+    <input type="password" id="reg-pass2" placeholder="再次輸入密碼">
+
+    <!-- 老闆可設定時薪；員工自行填 -->
+    <div id="reg-wage-wrap">
+      <label>時薪（元）</label>
+      <input type="number" id="reg-wage" placeholder="例：180">
+    </div>
+
+    <!-- 老闆才能看到：設定身份為員工還是老闆 -->
+    <div id="reg-role-wrap" style="display:none">
+      <label>帳號身份</label>
+      <select id="reg-role">
+        <option value="emp">員工</option>
+        <option value="boss">老闆</option>
+      </select>
+    </div>
+
+    <button class="btn primary" onclick="doRegister()">
+      <i class="ti ti-user-plus"></i> 建立帳號
+    </button>
+    <p class="meta" style="margin-top:8px;text-align:center" id="reg-hint"></p>
+  </div>
+</div>
+
+<!-- ════════════════ 老闆後台 ════════════════ -->
+<div id="s-boss" class="screen">
+  <div class="row" style="margin-bottom:1rem;margin-top:0.5rem">
+    <div>
+      <h1>管理後台</h1>
+      <p class="meta" id="boss-welcome">歡迎，老闆</p>
+    </div>
+    <button class="btn sm danger" onclick="logout()"><i class="ti ti-logout"></i> 登出</button>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="bossTab(this,'b-overview')"><i class="ti ti-layout-dashboard"></i> 總覽</button>
+    <button class="nav-btn" onclick="bossTab(this,'b-employees')"><i class="ti ti-users"></i> 員工</button>
+    <button class="nav-btn" onclick="bossTab(this,'b-insurance')"><i class="ti ti-shield-check"></i> 勞健保</button>
+    <button class="nav-btn" onclick="bossTab(this,'b-double')"><i class="ti ti-star"></i> 雙薪日</button>
+    <button class="nav-btn" onclick="bossTab(this,'b-daily')"><i class="ti ti-calendar"></i> 每日明細</button>
+  </div>
+
+  <!-- 總覽 -->
+  <div id="b-overview" class="section active">
+    <div class="stat-grid">
+      <div class="stat"><div class="num" id="ov-total">0</div><div class="lbl">員工總數</div></div>
+      <div class="stat"><div class="num" id="ov-in">0</div><div class="lbl">目前上班中</div></div>
+      <div class="stat"><div class="num" id="ov-hrs">0</div><div class="lbl">今日總工時(h)</div></div>
+      <div class="stat"><div class="num" id="ov-salary">$0</div><div class="lbl">今日薪資合計</div></div>
+    </div>
+    <div class="card"><h3>員工打卡狀態</h3><div id="ov-list"></div></div>
+  </div>
+
+  <!-- 員工管理 -->
+  <div id="b-employees" class="section">
+    <div class="card">
+      <h3>新增員工帳號</h3>
+      <label>姓名</label><input id="ne-name" placeholder="員工姓名">
+      <label>帳號</label><input id="ne-acc" placeholder="登入帳號">
+      <label>密碼</label><input id="ne-pass" type="password" placeholder="登入密碼">
+      <label>時薪（元）</label><input id="ne-wage" type="number" placeholder="例：180">
+      <button class="btn primary" onclick="addEmployee()"><i class="ti ti-plus"></i> 新增員工</button>
+    </div>
+    <div class="card">
+      <h3>員工清單</h3>
+      <p class="meta" style="margin-bottom:10px">點擊員工可展開薪資與勞健保設定</p>
+      <div id="emp-list"></div>
+    </div>
+  </div>
+
+  <!-- 勞健保 -->
+  <div id="b-insurance" class="section">
+    <div class="card">
+      <h3>各員工勞健保費用</h3>
+      <p class="meta" style="margin-bottom:12px">每位員工獨立設定，直接輸入固定金額（元/月）</p>
+      <div id="ins-per-emp"></div>
+    </div>
+  </div>
+
+  <!-- 雙薪日 -->
+  <div id="b-double" class="section">
+    <div class="card">
+      <h3>雙薪日設定</h3>
+      <p class="meta" style="margin-bottom:12px">雙薪日薪資 × 2，勞健保費用不變</p>
+      <div class="sub-section">
+        <div class="group-title">固定每週雙薪日</div>
+        <div class="week-grid" id="weekday-grid"></div>
+      </div>
+      <div class="sub-section">
+        <div class="group-title">指定特定日期</div>
+        <div class="row" style="margin-bottom:8px">
+          <input type="date" id="double-date" style="margin:0;flex:1">
+          <button class="btn sm primary" onclick="addDoubleDate()"><i class="ti ti-plus"></i> 新增</button>
+        </div>
+        <div id="double-date-chips"></div>
+      </div>
+    </div>
+    <div class="card"><h3>本月雙薪日預覽</h3><div id="double-preview"></div></div>
+  </div>
+
+  <!-- 每日明細 -->
+  <div id="b-daily" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="row">
+        <div><h3 style="margin-bottom:2px">每日薪水明細</h3><p class="meta">點擊日期可展開</p></div>
+        <select id="daily-emp-filter" onchange="renderDaily()" style="margin:0;width:auto"></select>
+      </div>
+    </div>
+    <div class="card"><div id="daily-list"></div></div>
+  </div>
+</div>
+
+<!-- ════════════════ 員工介面 ════════════════ -->
+<div id="s-emp" class="screen">
+  <div class="row" style="margin-bottom:1rem;margin-top:0.5rem">
+    <div>
+      <h1 id="emp-name-h">員工</h1>
+      <p class="meta" id="emp-date"></p>
+    </div>
+    <button class="btn sm danger" onclick="logout()"><i class="ti ti-logout"></i> 登出</button>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="empTab(this,'e-clock')"><i class="ti ti-clock"></i> 打卡</button>
+    <button class="nav-btn" onclick="empTab(this,'e-history')"><i class="ti ti-list"></i> 紀錄</button>
+    <button class="nav-btn" onclick="empTab(this,'e-salary')"><i class="ti ti-coin"></i> 薪資</button>
+  </div>
+
+  <!-- 打卡 -->
+  <div id="e-clock" class="section active">
+    <div class="card" style="text-align:center">
+      <p class="meta">現在時間</p>
+      <div class="big-time" id="now-time">--:--:--</div>
+      <div id="double-notice" style="display:none" class="alert info"></div>
+      <div id="clock-status" class="alert info" style="margin-bottom:1rem">今日尚未打卡</div>
+      <button id="clock-btn" class="btn success" onclick="clockAction()">
+        <i class="ti ti-player-play"></i> 上班打卡
+      </button>
+    </div>
+    <div class="card">
+      <h3>今日工時</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="num" id="td-in">--</div><div class="lbl">上班時間</div></div>
+        <div class="stat"><div class="num" id="td-out">--</div><div class="lbl">下班時間</div></div>
+        <div class="stat"><div class="num" id="td-hrs">0</div><div class="lbl">工時（小時）</div></div>
+        <div class="stat"><div class="num" id="td-pay">$0</div><div class="lbl">今日薪資</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打卡紀錄 -->
+  <div id="e-history" class="section">
+    <div class="card"><h3>近期打卡紀錄</h3><div id="hist-list"></div></div>
+  </div>
+
+  <!-- 薪資 -->
+  <div id="e-salary" class="section">
+    <div class="card"><h3>本月薪資試算</h3><div id="sal-detail"></div></div>
+  </div>
+</div>
+
+<!-- ════════════════ JavaScript ════════════════ -->
+<script>
+const WD = ['日','一','二','三','四','五','六'];
+
+// ── 資料庫（localStorage 持久化） ──
+function loadDB() {
+  const saved = localStorage.getItem('workforce_db');
+  if (saved) return JSON.parse(saved);
+  return {
+    employees: [
+      { id: 'boss', name: '老闆', acc: 'boss', pass: '1234', role: 'boss', wage: 0,
+        ins: { laborEmp: 0, laborBoss: 0, healthEmp: 0, healthBoss: 0 } },
+      { id: 'e1', name: '王小明', acc: 'emp01', pass: '1234', role: 'emp', wage: 180,
+        ins: { laborEmp: 454, laborBoss: 1026, healthEmp: 372, healthBoss: 1085 } },
+      { id: 'e2', name: '李美華', acc: 'emp02', pass: '1234', role: 'emp', wage: 200,
+        ins: { laborEmp: 541, laborBoss: 1220, healthEmp: 430, healthBoss: 1253 } },
+      { id: 'e3', name: '陳建志', acc: 'emp03', pass: '1234', role: 'emp', wage: 160,
+        ins: { laborEmp: 388, laborBoss: 876, healthEmp: 316, healthBoss: 921 } }
+    ],
+    doubleWeekdays: [],
+    doubleDates: [],
+    records: [
+      { empId: 'e1', date: '2026-05-10', inTime: new Date('2026-05-10T08:05:00').getTime(), outTime: new Date('2026-05-10T17:10:00').getTime() },
+      { empId: 'e2', date: '2026-05-10', inTime: new Date('2026-05-10T09:00:00').getTime(), outTime: new Date('2026-05-10T18:00:00').getTime() },
+      { empId: 'e1', date: '2026-05-11', inTime: new Date('2026-05-11T08:00:00').getTime(), outTime: new Date('2026-05-11T16:30:00').getTime() },
+      { empId: 'e3', date: '2026-05-11', inTime: new Date('2026-05-11T08:30:00').getTime(), outTime: new Date('2026-05-11T17:00:00').getTime() },
+      { empId: 'e2', date: '2026-05-12', inTime: new Date('2026-05-12T09:00:00').getTime(), outTime: new Date('2026-05-12T18:30:00').getTime() },
+      { empId: 'e1', date: '2026-05-12', inTime: new Date('2026-05-12T08:10:00').getTime(), outTime: new Date('2026-05-12T17:00:00').getTime() },
+      { empId: 'e3', date: '2026-05-12', inTime: new Date('2026-05-12T08:00:00').getTime(), outTime: new Date('2026-05-12T17:30:00').getTime() }
+    ]
+  };
+}
+function saveDB() { localStorage.setItem('workforce_db', JSON.stringify(DB)); }
+let DB = loadDB();
+let currentUser = null, clockInterval = null;
+let loginRole = 'emp'; // 目前選擇登入的身份
+
+// ── 畫面切換 ──
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── 登入頁切換 ──
+function showLogin(role) {
+  loginRole = role;
+  document.getElementById('login-title').textContent = role === 'boss' ? '老闆' : '員工';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').style.display = 'none';
+  // 為老闆顯示可設身份；員工不可
+  document.getElementById('reg-role-wrap').style.display = role === 'boss' ? 'block' : 'none';
+  document.getElementById('reg-hint').textContent = role === 'boss'
+    ? '老闆可建立其他老闆或員工帳號'
+    : '員工帳號需由老闆審核才能登入（預設已啟用）';
+  clearRegForm();
+  switchTab('login');
+  go('s-loginform');
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-reg').classList.toggle('active', tab === 'reg');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('form-reg').style.display  = tab === 'reg'   ? 'block' : 'none';
+}
+
+function clearRegForm() {
+  ['reg-name','reg-acc','reg-pass','reg-pass2','reg-wage'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('reg-err').style.display = 'none';
+  document.getElementById('reg-ok').style.display = 'none';
+}
+
+// ── 登入 ──
+function doLogin() {
+  const acc  = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const u = DB.employees.find(e =>
+    e.acc === acc && e.pass === pass &&
+    (loginRole === 'boss' ? e.role === 'boss' : e.role === 'emp')
+  );
+  if (!u) {
+    showErr('login-err', '帳號或密碼錯誤，請確認身份類別是否正確');
+    return;
+  }
+  currentUser = u;
+  if (u.role === 'boss') { loadBoss(); go('s-boss'); }
+  else { loadEmp(); go('s-emp'); }
+}
+
+// ── 註冊 ──
+function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const acc   = document.getElementById('reg-acc').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const wage  = parseFloat(document.getElementById('reg-wage').value) || 0;
+  const role  = loginRole === 'boss'
+    ? (document.getElementById('reg-role').value || 'emp')
+    : 'emp';
+
+  document.getElementById('reg-err').style.display = 'none';
+  document.getElementById('reg-ok').style.display = 'none';
+
+  if (!name) return showErr('reg-err', '請填寫姓名');
+  if (!acc)  return showErr('reg-err', '請填寫帳號');
+  if (pass.length < 4) return showErr('reg-err', '密碼至少需要4個字元');
+  if (pass !== pass2) return showErr('reg-err', '兩次密碼不相符');
+  if (DB.employees.find(e => e.acc === acc)) return showErr('reg-err', '此帳號已被使用，請更換帳號');
+
+  const newEmp = {
+    id: 'u' + Date.now(),
+    name, acc, pass, role, wage,
+    ins: { laborEmp: 0, laborBoss: 0, healthEmp: 0, healthBoss: 0 }
+  };
+  DB.employees.push(newEmp);
+  saveDB();
+
+  const okEl = document.getElementById('reg-ok');
+  okEl.textContent = `帳號「${acc}」已建立成功！請切換到登入頁面登入。`;
+  okEl.style.display = 'block';
+  clearRegForm();
+  document.getElementById('reg-name').value = '';
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function logout() {
+  currentUser = null;
+  if (clockInterval) clearInterval(clockInterval);
+  go('s-login');
+}
+
+// ── 工具函式 ──
+function isDouble(ds) {
+  if (DB.doubleDates.includes(ds)) return true;
+  const d = new Date(ds + 'T00:00:00');
+  return DB.doubleWeekdays.includes(d.getDay());
+}
+function calcEmpIns(emp) {
+  return (emp.ins.laborEmp || 0) + (emp.ins.healthEmp || 0);
+}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function fmtTime(ts) {
+  return ts ? new Date(ts).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '--';
+}
+
+// ════════ 老闆後台 ════════
+function bossTab(btn, id) {
+  document.querySelectorAll('#s-boss .nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#s-boss .section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'b-overview')   renderOverview();
+  if (id === 'b-employees')  renderEmployees();
+  if (id === 'b-insurance')  renderInsPerEmp();
+  if (id === 'b-double')     { renderWeekdayGrid(); renderDoubleDates(); renderDoublePreview(); }
+  if (id === 'b-daily')      { populateDailyFilter(); renderDaily(); }
+}
+
+function loadBoss() {
+  document.getElementById('boss-welcome').textContent = '歡迎，' + currentUser.name;
+  renderOverview(); renderEmployees(); renderInsPerEmp();
+  renderWeekdayGrid(); renderDoubleDates(); renderDoublePreview();
+  populateDailyFilter(); renderDaily();
+}
+
+// 總覽
+function renderOverview() {
+  const emps = DB.employees.filter(e => e.role === 'emp');
+  document.getElementById('ov-total').textContent = emps.length;
+  const today = todayStr();
+  const todayRecs = DB.records.filter(r => r.date === today);
+  document.getElementById('ov-in').textContent = todayRecs.filter(r => r.inTime && !r.outTime).length;
+  let totalHrs = 0, totalSal = 0;
+  todayRecs.forEach(r => {
+    if (r.inTime && r.outTime) {
+      const h = (r.outTime - r.inTime) / 3600000; totalHrs += h;
+      const emp = DB.employees.find(e => e.id === r.empId);
+      if (emp) totalSal += h * emp.wage * (isDouble(today) ? 2 : 1);
+    }
+  });
+  document.getElementById('ov-hrs').textContent = totalHrs.toFixed(1);
+  document.getElementById('ov-salary').textContent = '$' + Math.round(totalSal);
+  document.getElementById('ov-list').innerHTML = emps.map(e => {
+    const rec = DB.records.find(r => r.empId === e.id && r.date === today);
+    let st = '<span class="tag pending">未打卡</span>';
+    if (rec && rec.inTime && !rec.outTime) st = '<span class="tag in">上班中</span>';
+    if (rec && rec.outTime) st = '<span class="tag out">已下班</span>';
+    const dbl = isDouble(today) ? '<span class="badge amber" style="margin-left:4px">雙薪</span>' : '';
+    return `<div class="emp-row">
+      <div class="avatar">${e.name[0]}</div>
+      <div style="flex:1"><p style="font-weight:600">${e.name}${dbl}</p>
+      <p class="meta">時薪 $${e.wage} · 扣款 $${calcEmpIns(e)}/月</p></div>
+      ${st}</div>`;
+  }).join('');
+}
+
+// 員工清單（可展開編輯）
+function renderEmployees() {
+  const emps = DB.employees.filter(e => e.role === 'emp');
+  document.getElementById('emp-list').innerHTML = emps.map(e => `
+    <div class="emp-card" id="ecard-${e.id}">
+      <div class="emp-card-head" onclick="toggleEmpCard('${e.id}')">
+        <div class="avatar">${e.name[0]}</div>
+        <div style="flex:1">
+          <p style="font-weight:600">${e.name} <span class="badge blue">@${e.acc}</span></p>
+          <p class="meta">時薪 $${e.wage} · 勞保扣 $${e.ins.laborEmp||0} · 健保扣 $${e.ins.healthEmp||0}</p>
+        </div>
+        <i class="ti ti-chevron-down" style="color:var(--text2)"></i>
+      </div>
+      <div class="emp-card-body">
+        <div class="group-title" style="margin-bottom:8px">薪資設定</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="meta">時薪</span>
+          <input class="sm-in" type="number" id="wage-${e.id}" value="${e.wage}">
+          <span class="meta">元/時</span>
+          <button class="btn sm warning" onclick="saveWage('${e.id}')"><i class="ti ti-check"></i> 儲存</button>
+        </div>
+        <div class="group-title">勞健保費（月）</div>
+        <div class="ins-row" style="font-size:11px;color:var(--text2);font-weight:600;padding-bottom:6px">
+          <span>項目</span><span style="text-align:center">員工自付</span><span style="text-align:center">公司負擔</span>
+        </div>
+        <div class="ins-row">
+          <span class="lbl">勞保</span>
+          <input class="sm-in" type="number" id="li-emp-${e.id}" value="${e.ins.laborEmp||0}">
+          <input class="sm-in" type="number" id="li-boss-${e.id}" value="${e.ins.laborBoss||0}">
+        </div>
+        <div class="ins-row">
+          <span class="lbl">健保</span>
+          <input class="sm-in" type="number" id="hi-emp-${e.id}" value="${e.ins.healthEmp||0}">
+          <input class="sm-in" type="number" id="hi-boss-${e.id}" value="${e.ins.healthBoss||0}">
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+          <button class="btn sm danger" onclick="removeEmp('${e.id}')"><i class="ti ti-trash"></i> 刪除</button>
+          <button class="btn sm primary" onclick="saveEmpIns('${e.id}')"><i class="ti ti-check"></i> 儲存勞健保</button>
+        </div>
+        <div id="ins-saved-${e.id}" class="saved-flash"><i class="ti ti-check"></i> 已儲存</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleEmpCard(id) { document.getElementById('ecard-' + id).classList.toggle('open'); }
+
+function saveWage(id) {
+  const val = parseFloat(document.getElementById('wage-' + id).value);
+  if (isNaN(val) || val < 0) { alert('請輸入有效時薪'); return; }
+  DB.employees.find(e => e.id === id).wage = val;
+  saveDB(); renderEmployees(); renderOverview();
+}
+
+function saveEmpIns(id) {
+  const emp = DB.employees.find(e => e.id === id);
+  emp.ins.laborEmp  = parseFloat(document.getElementById('li-emp-'+id).value)  || 0;
+  emp.ins.laborBoss = parseFloat(document.getElementById('li-boss-'+id).value) || 0;
+  emp.ins.healthEmp = parseFloat(document.getElementById('hi-emp-'+id).value)  || 0;
+  emp.ins.healthBoss= parseFloat(document.getElementById('hi-boss-'+id).value) || 0;
+  saveDB();
+  const msg = document.getElementById('ins-saved-' + id);
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; renderEmployees(); document.getElementById('ecard-'+id).classList.add('open'); }, 1500);
+  renderInsPerEmp();
+}
+
+function addEmployee() {
+  const name = document.getElementById('ne-name').value.trim();
+  const acc  = document.getElementById('ne-acc').value.trim();
+  const pass = document.getElementById('ne-pass').value;
+  const wage = parseFloat(document.getElementById('ne-wage').value) || 0;
+  if (!name || !acc || !pass) { alert('請填寫完整資料'); return; }
+  if (DB.employees.find(e => e.acc === acc)) { alert('帳號已存在'); return; }
+  DB.employees.push({ id: 'e'+Date.now(), name, acc, pass, role: 'emp', wage, ins: { laborEmp:0, laborBoss:0, healthEmp:0, healthBoss:0 } });
+  ['ne-name','ne-acc','ne-pass','ne-wage'].forEach(id => document.getElementById(id).value = '');
+  saveDB(); renderEmployees(); renderOverview(); populateDailyFilter(); renderInsPerEmp();
+}
+
+function removeEmp(id) {
+  if (!confirm('確定刪除此員工？')) return;
+  DB.employees = DB.employees.filter(e => e.id !== id);
+  saveDB(); renderEmployees(); renderOverview(); populateDailyFilter(); renderDaily(); renderInsPerEmp();
+}
+
+// 勞健保（獨立頁面）
+function renderInsPerEmp() {
+  const emps = DB.employees.filter(e => e.role === 'emp');
+  document.getElementById('ins-per-emp').innerHTML = emps.map(e => `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="avatar" style="width:28px;height:28px;font-size:11px">${e.name[0]}</div>
+        <span style="font-weight:600">${e.name}</span>
+        <span class="meta">時薪 $${e.wage}</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px">
+        <div class="ins-row" style="font-size:11px;color:var(--text2);font-weight:600;padding-bottom:6px">
+          <span>項目</span><span style="text-align:center">員工自付</span><span style="text-align:center">公司負擔</span>
+        </div>
+        <div class="ins-row">
+          <span class="lbl">勞保</span>
+          <input class="sm-in" type="number" id="ip-li-emp-${e.id}" value="${e.ins.laborEmp||0}">
+          <input class="sm-in" type="number" id="ip-li-boss-${e.id}" value="${e.ins.laborBoss||0}">
+        </div>
+        <div class="ins-row">
+          <span class="lbl">健保</span>
+          <input class="sm-in" type="number" id="ip-hi-emp-${e.id}" value="${e.ins.healthEmp||0}">
+          <input class="sm-in" type="number" id="ip-hi-boss-${e.id}" value="${e.ins.healthBoss||0}">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="meta" style="font-size:12px">員工月扣：$${(e.ins.laborEmp||0)+(e.ins.healthEmp||0)}</span>
+          <button class="btn sm primary" onclick="saveInsFromPanel('${e.id}')"><i class="ti ti-check"></i> 儲存</button>
+        </div>
+        <div id="ip-saved-${e.id}" class="saved-flash"><i class="ti ti-check"></i> 已儲存</div>
+      </div>
+    </div>`).join('');
+}
+
+function saveInsFromPanel(id) {
+  const emp = DB.employees.find(e => e.id === id);
+  emp.ins.laborEmp  = parseFloat(document.getElementById('ip-li-emp-'+id).value)  || 0;
+  emp.ins.laborBoss = parseFloat(document.getElementById('ip-li-boss-'+id).value) || 0;
+  emp.ins.healthEmp = parseFloat(document.getElementById('ip-hi-emp-'+id).value)  || 0;
+  emp.ins.healthBoss= parseFloat(document.getElementById('ip-hi-boss-'+id).value) || 0;
+  saveDB();
+  const msg = document.getElementById('ip-saved-' + id);
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; renderInsPerEmp(); }, 1500);
+  renderEmployees();
+}
+
+// 雙薪日
+function renderWeekdayGrid() {
+  document.getElementById('weekday-grid').innerHTML = WD.map((d, i) =>
+    `<button class="week-btn${DB.doubleWeekdays.includes(i)?' on':''}" onclick="toggleWeekday(${i})">${d}</button>`
+  ).join('');
+}
+function toggleWeekday(i) {
+  DB.doubleWeekdays.includes(i)
+    ? DB.doubleWeekdays = DB.doubleWeekdays.filter(d => d !== i)
+    : DB.doubleWeekdays.push(i);
+  saveDB(); renderWeekdayGrid(); renderDoublePreview();
+}
+function addDoubleDate() {
+  const val = document.getElementById('double-date').value;
+  if (!val) return;
+  if (!DB.doubleDates.includes(val)) { DB.doubleDates.push(val); DB.doubleDates.sort(); }
+  document.getElementById('double-date').value = '';
+  saveDB(); renderDoubleDates(); renderDoublePreview();
+}
+function removeDoubleDate(d) {
+  DB.doubleDates = DB.doubleDates.filter(x => x !== d);
+  saveDB(); renderDoubleDates(); renderDoublePreview();
+}
+function renderDoubleDates() {
+  document.getElementById('double-date-chips').innerHTML = DB.doubleDates.map(d =>
+    `<span class="date-chip">${d}
+      <button onclick="removeDoubleDate('${d}')" aria-label="移除"><i class="ti ti-x" style="font-size:12px"></i></button>
+    </span>`).join('') || '<p class="meta">尚未指定特定日期</p>';
+}
+function renderDoublePreview() {
+  const now = new Date(), yr = now.getFullYear(), mo = now.getMonth();
+  const days = new Date(yr, mo+1, 0).getDate();
+  const doubles = [];
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(yr, mo, d);
+    const ds = dt.toISOString().slice(0, 10);
+    if (isDouble(ds)) doubles.push({ ds, wd: WD[dt.getDay()] });
+  }
+  const el = document.getElementById('double-preview');
+  if (!doubles.length) { el.innerHTML = '<p class="meta" style="text-align:center;padding:1rem">本月無雙薪日</p>'; return; }
+  el.innerHTML = doubles.map(x =>
+    `<div class="ins-item"><span style="font-weight:600">${x.ds}</span><span class="tag double">週${x.wd} · 雙薪</span></div>`
+  ).join('');
+}
+
+// 每日明細
+function populateDailyFilter() {
+  const sel = document.getElementById('daily-emp-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">全部員工</option>';
+  DB.employees.filter(e => e.role === 'emp').forEach(e =>
+    sel.innerHTML += `<option value="${e.id}"${e.id === cur ? ' selected' : ''}>${e.name}</option>`
+  );
+}
+
+function renderDaily() {
+  const filter = document.getElementById('daily-emp-filter').value;
+  let recs = DB.records.filter(r => r.outTime);
+  if (filter !== 'all') recs = recs.filter(r => r.empId === filter);
+  const byDate = {};
+  recs.forEach(r => { if (!byDate[r.date]) byDate[r.date] = []; byDate[r.date].push(r); });
+  const dates = Object.keys(byDate).sort().reverse();
+  const list = document.getElementById('daily-list');
+  if (!dates.length) { list.innerHTML = '<p class="meta" style="text-align:center;padding:1rem">尚無打卡紀錄</p>'; return; }
+
+  list.innerHTML = dates.map(date => {
+    const dayRecs = byDate[date];
+    const dbl = isDouble(date);
+    let dayHrs = 0, dayGross = 0, dayNet = 0;
+    const rows = dayRecs.map(r => {
+      const emp = DB.employees.find(e => e.id === r.empId);
+      if (!emp) return '';
+      const hrs = (r.outTime - r.inTime) / 3600000;
+      const m = dbl ? 2 : 1;
+      const gross = hrs * emp.wage * m;
+      const empDeduct = calcEmpIns(emp);
+      const net = gross - empDeduct;
+      dayHrs += hrs; dayGross += gross; dayNet += net;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" style="width:28px;height:28px;font-size:11px">${emp.name[0]}</div>
+          <div>
+            <p style="font-size:13px;font-weight:600">${emp.name}</p>
+            <p class="meta" style="font-size:11px">${fmtTime(r.inTime)}–${fmtTime(r.outTime)} · ${hrs.toFixed(1)}h${dbl?' ×2':''}</p>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <p style="font-size:13px;font-weight:600">實領 $${Math.round(net)}</p>
+          <p class="meta" style="font-size:11px">應付 $${Math.round(gross)} · 扣 $${Math.round(empDeduct)}</p>
+        </div>
+      </div>`;
+    }).join('');
+    const wd = WD[new Date(date + 'T00:00:00').getDay()];
+    const dblBadge = dbl ? '<span class="badge amber" style="margin-left:6px">雙薪日</span>' : '';
+    return `<div class="day-row" id="day-${date}">
+      <div class="day-head" onclick="toggleDay('${date}')">
+        <div>
+          <p style="font-weight:600">${date}${dblBadge} <span class="meta">週${wd}</span></p>
+          <p class="meta">${dayRecs.length} 位員工 · ${dayHrs.toFixed(1)}h</p>
+        </div>
+        <div style="text-align:right">
+          <p style="font-weight:600;color:var(--blue)">實發 $${Math.round(dayNet)}</p>
+          <p class="meta">應付 $${Math.round(dayGross)}</p>
+          <i class="ti ti-chevron-down" style="color:var(--text2);font-size:16px"></i>
+        </div>
+      </div>
+      <div class="day-detail">${rows}
+        <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:4px">
+          <span style="font-size:13px;font-weight:600">當日合計</span>
+          <div style="text-align:right">
+            <span style="font-weight:600;color:var(--blue)">實發 $${Math.round(dayNet)}</span>
+            <span class="meta" style="margin-left:8px">應付 $${Math.round(dayGross)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleDay(date) { document.getElementById('day-' + date).classList.toggle('open'); }
+
+// ════════ 員工介面 ════════
+function empTab(btn, id) {
+  document.querySelectorAll('#s-emp .nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#s-emp .section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'e-history') renderHist();
+  if (id === 'e-salary')  renderSalary();
+}
+
+function loadEmp() {
+  document.getElementById('emp-name-h').textContent = currentUser.name;
+  document.getElementById('emp-date').textContent = new Date().toLocaleDateString('zh-TW', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  updateClock();
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = setInterval(() => {
+    document.getElementById('now-time').textContent = new Date().toLocaleTimeString('zh-TW');
+    updateTodayStats();
+  }, 1000);
+  updateTodayStats();
+}
+
+function updateClock() {
+  const today = todayStr();
+  const rec = DB.records.find(r => r.empId === currentUser.id && r.date === today);
+  const btn = document.getElementById('clock-btn');
+  const st  = document.getElementById('clock-status');
+  const notice = document.getElementById('double-notice');
+  if (isDouble(today)) { notice.style.display = 'block'; notice.textContent = '⭐ 今天是雙薪日，薪資 × 2！'; }
+  else notice.style.display = 'none';
+  if (!rec || !rec.inTime) {
+    btn.className = 'btn success'; btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-player-play"></i> 上班打卡';
+    st.className = 'alert info'; st.textContent = '今日尚未打卡';
+  } else if (!rec.outTime) {
+    btn.className = 'btn danger'; btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-player-stop"></i> 下班打卡';
+    st.className = 'alert success'; st.textContent = '上班中 · ' + fmtTime(rec.inTime) + ' 打卡';
+  } else {
+    btn.className = 'btn'; btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-check"></i> 今日已完成';
+    st.className = 'alert success'; st.textContent = '已下班 · 工作完成';
+  }
+}
+
+function clockAction() {
+  const today = todayStr();
+  let rec = DB.records.find(r => r.empId === currentUser.id && r.date === today);
+  if (!rec) { rec = { empId: currentUser.id, date: today, inTime: Date.now(), outTime: null }; DB.records.push(rec); }
+  else if (!rec.outTime) rec.outTime = Date.now();
+  saveDB(); updateClock(); updateTodayStats();
+}
+
+function updateTodayStats() {
+  const today = todayStr();
+  const rec = DB.records.find(r => r.empId === currentUser.id && r.date === today);
+  document.getElementById('td-in').textContent  = rec && rec.inTime  ? fmtTime(rec.inTime)  : '--';
+  document.getElementById('td-out').textContent = rec && rec.outTime ? fmtTime(rec.outTime) : '--';
+  if (rec && rec.inTime) {
+    const end = rec.outTime || Date.now();
+    const hrs = (end - rec.inTime) / 3600000;
+    const m = isDouble(today) ? 2 : 1;
+    const gross = hrs * currentUser.wage * m;
+    const deduct = calcEmpIns(currentUser);
+    document.getElementById('td-hrs').textContent = hrs.toFixed(1);
+    document.getElementById('td-pay').textContent = '$' + Math.round(gross - deduct);
+  }
+}
+
+function renderHist() {
+  const recs = DB.records.filter(r => r.empId === currentUser.id).reverse();
+  const list = document.getElementById('hist-list');
+  if (!recs.length) { list.innerHTML = '<p class="meta" style="text-align:center;padding:1rem">尚無打卡紀錄</p>'; return; }
+  list.innerHTML = recs.map(r => {
+    const hrs = r.outTime ? (r.outTime - r.inTime) / 3600000 : -1;
+    const dbl = isDouble(r.date);
+    const gross = hrs > 0 ? hrs * currentUser.wage * (dbl ? 2 : 1) : 0;
+    const net = gross - calcEmpIns(currentUser);
+    const dblMark = dbl ? '<span class="badge amber" style="margin-left:4px">雙薪</span>' : '';
+    return `<div class="ins-item">
+      <div><p style="font-weight:600">${r.date}${dblMark}</p>
+      <p class="meta">${fmtTime(r.inTime)}${r.outTime ? ' → ' + fmtTime(r.outTime) : ''}</p></div>
+      <div style="text-align:right">
+        <p style="font-weight:600">${hrs > 0 ? hrs.toFixed(1) + 'h' : '進行中'}</p>
+        <p class="meta">${hrs > 0 ? '$' + Math.round(net) : ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSalary() {
+  const recs = DB.records.filter(r => r.empId === currentUser.id && r.outTime);
+  let totalGross = 0;
+  recs.forEach(r => {
+    const hrs = (r.outTime - r.inTime) / 3600000;
+    totalGross += hrs * currentUser.wage * (isDouble(r.date) ? 2 : 1);
+  });
+  const ins = currentUser.ins;
+  const empDeduct = (ins.laborEmp || 0) + (ins.healthEmp || 0);
+  const net = totalGross - empDeduct;
+  document.getElementById('sal-detail').innerHTML = `
+    <div class="stat-grid" style="margin-bottom:1rem">
+      <div class="stat"><div class="num">${recs.length}</div><div class="lbl">出勤天數</div></div>
+      <div class="stat"><div class="num">$${Math.round(totalGross)}</div><div class="lbl">應付薪資</div></div>
+    </div>
+    <div class="ins-item"><div><p style="font-weight:600">勞保（員工自付）</p></div><div><p style="color:var(--red)">-$${ins.laborEmp||0}/月</p></div></div>
+    <div class="ins-item"><div><p style="font-weight:600">健保（員工自付）</p></div><div><p style="color:var(--red)">-$${ins.healthEmp||0}/月</p></div></div>
+    <hr class="divider">
+    <div class="row">
+      <span style="font-weight:600;font-size:16px">實領薪資</span>
+      <span style="font-weight:700;font-size:20px;color:var(--blue)">$${Math.round(net)}</span>
+    </div>`;
+}
+
+// ── 初始化時鐘 ──
+document.getElementById('now-time').textContent = new Date().toLocaleTimeString('zh-TW');
+</script>
+</body>
+</html>
