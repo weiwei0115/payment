@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>工時記錄系統</title>
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="工時系統">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#f2f2f0;--sur:#fff;--sur2:#f0f0ee;
+  --bd:#e0e0dc;--bd2:#ccc;
+  --tx:#18180f;--tx2:#6b6b66;
+  --blu:#185FA5;--blu2:#E6F1FB;--blu3:#0C447C;
+  --grn:#3B6D11;--grn2:#EAF3DE;
+  --red:#A32D2D;--red2:#FCEBEB;
+  --amb:#854F0B;--amb2:#FAEEDA;--amb3:#FAC775;
+  --r:12px;--rs:7px;--sh:0 1px 4px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;color:var(--tx);background:var(--bg);min-height:100vh}
+.screen{display:none;padding:1rem;max-width:480px;margin:0 auto;padding-bottom:2rem}
+.screen.active{display:block}
+.card{background:var(--sur);border:.5px solid var(--bd);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--sh)}
+.btn{width:100%;padding:11px 16px;border-radius:var(--rs);border:.5px solid var(--bd2);background:var(--sur);color:var(--tx);font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.btn:active{opacity:.75}
+.btn.pri{background:var(--blu);color:var(--blu2);border-color:var(--blu)}
+.btn.suc{background:var(--grn);color:var(--grn2);border-color:var(--grn)}
+.btn.dan{background:var(--red);color:var(--red2);border-color:var(--red)}
+.btn.war{background:var(--amb);color:var(--amb2);border-color:var(--amb)}
+.btn.sm{width:auto;padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.4;pointer-events:none}
+input,select{width:100%;padding:9px 12px;border-radius:var(--rs);border:.5px solid var(--bd2);background:var(--sur);color:var(--tx);font-size:15px;margin-bottom:10px;-webkit-appearance:none}
+input:focus,select:focus{outline:2px solid var(--blu);outline-offset:-1px}
+input.xs{margin:0;padding:5px 8px;font-size:13px;width:80px}
+input.md{margin:0;padding:7px 10px;font-size:14px}
+label{font-size:13px;color:var(--tx2);display:block;margin-bottom:3px}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+h2{font-size:18px;font-weight:700;margin-bottom:1rem}
+h3{font-size:16px;font-weight:600;margin-bottom:8px}
+p.meta{font-size:13px;color:var(--tx2)}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.tag.in{background:var(--grn2);color:var(--grn)}
+.tag.out{background:var(--red2);color:var(--red)}
+.tag.pend{background:var(--amb2);color:var(--amb)}
+.tag.dbl{background:var(--blu2);color:var(--blu3)}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.b{background:var(--blu2);color:var(--blu3)}
+.badge.a{background:var(--amb3);color:#633806}
+.badge.e{background:#fff0c0;color:#7a5800}
+.alert{padding:10px 14px;border-radius:var(--rs);font-size:13px;margin-bottom:10px}
+.alert.info{background:var(--blu2);color:var(--blu)}
+.alert.ok{background:var(--grn2);color:var(--grn)}
+.alert.err{background:var(--red2);color:var(--red)}
+.nav{display:flex;gap:6px;margin-bottom:1rem;overflow-x:auto;padding-bottom:2px}
+.nav::-webkit-scrollbar{display:none}
+.nb{padding:7px 14px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--sur);color:var(--tx2);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.nb.on{background:var(--blu);color:var(--blu2);border-color:var(--blu)}
+.sec{display:none}.sec.on{display:block}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.divider{border:none;border-top:.5px solid var(--bd);margin:12px 0}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.st{background:var(--sur2);border-radius:var(--rs);padding:1rem;text-align:center}
+.st .n{font-size:22px;font-weight:700}
+.st .l{font-size:12px;color:var(--tx2);margin-top:2px}
+.clock{font-size:52px;font-weight:700;letter-spacing:-2px;text-align:center;padding:.75rem 0;color:var(--blu);font-variant-numeric:tabular-nums}
+.av{width:36px;height:36px;border-radius:50%;background:var(--blu2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blu3);flex-shrink:0}
+.avs{width:28px;height:28px;font-size:11px}
+.ec{background:var(--sur);border:.5px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.ec-h{display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer}
+.ec-h:active{background:var(--sur2)}
+.ec-b{display:none;padding:0 12px 12px}
+.ec.open .ec-b{display:block}
+.ir{display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--bd);font-size:13px}
+.ir:last-child{border-bottom:none}
+.li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--bd)}
+.li:last-child{border-bottom:none}
+.er{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--bd)}
+.er:last-child{border-bottom:none}
+.dr{padding:10px 0;border-bottom:.5px solid var(--bd)}
+.dr:last-child{border-bottom:none}
+.dh{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.dd{display:none;margin-top:8px;padding:10px;background:var(--sur2);border-radius:var(--rs)}
+.dr.open .dd{display:block}
+.cr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:.5px solid var(--bd)}
+.cr:last-child{border-bottom:none}
+.wg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px}
+.wb{padding:7px 2px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--sur);color:var(--tx2);font-size:12px;cursor:pointer;text-align:center;font-weight:500}
+.wb.on{background:var(--blu);color:var(--blu2);border-color:var(--blu)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--blu2);color:var(--blu3);border-radius:20px;font-size:12px;margin:3px;font-weight:500}
+.chip button{background:none;border:none;cursor:pointer;color:var(--blu3);padding:0;font-size:13px;line-height:1;display:flex;align-items:center}
+.sub{background:var(--sur2);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px}
+.gtl{font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:.5px solid var(--bd)}
+.flash{font-size:12px;color:var(--grn);display:none;margin-top:6px}
+.tabs{display:flex;border:.5px solid var(--bd);border-radius:var(--rs);overflow:hidden;margin-bottom:14px}
+.tabs button{flex:1;padding:9px;border:none;background:var(--sur2);color:var(--tx2);font-size:14px;font-weight:500;cursor:pointer}
+.tabs button.on{background:var(--blu);color:white}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:1rem}
+#modal.open{display:flex}
+.mbox{background:var(--sur);border-radius:var(--r);padding:1.25rem;width:100%;max-width:360px;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.hero{padding-top:2.5rem;text-align:center;margin-bottom:2rem}
+.hero-icon{width:76px;height:76px;background:var(--blu);border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 4px 20px rgba(24,95,165,.4)}
+
+/* 載入遮罩 */
+#loading{position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loading.hide{display:none}
+.spinner{width:40px;height:40px;border:3px solid var(--bd);border-top-color:var(--blu);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- 載入中 -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--tx2);font-size:14px">連線中...</p>
+</div>
+
+<!-- ══════ 首頁 ══════ -->
+<div id="pg-home" class="screen">
+  <div class="hero">
+    <div class="hero-icon"><i class="ti ti-clock" style="font-size:38px;color:white"></i></div>
+    <h1>工時記錄系統</h1>
+    <p class="meta" style="margin-top:6px">請選擇登入身份</p>
+  </div>
+  <div class="card">
+    <button class="btn pri" style="margin-bottom:10px" onclick="showLogin('boss')">
+      <i class="ti ti-briefcase"></i> 老闆登入 / 註冊
+    </button>
+    <button class="btn" onclick="showLogin('emp')">
+      <i class="ti ti-user"></i> 員工登入
+    </button>
+  </div>
+</div>
+
+<!-- ══════ 登入 / 註冊 ══════ -->
+<div id="pg-login" class="screen">
+  <div style="margin:1rem 0 1.5rem">
+    <button class="btn sm" onclick="go('pg-home')" style="margin-bottom:1rem">
+      <i class="ti ti-arrow-left"></i> 返回
+    </button>
+    <h2 id="lt">登入</h2>
+  </div>
+  <div id="login-tabs" class="tabs">
+    <button id="tab-li" class="on" onclick="swTab('li')">登入</button>
+    <button id="tab-rg" onclick="swTab('rg')">註冊老闆帳號</button>
+  </div>
+  <div id="f-li" class="card">
+    <label>電子郵件</label><input id="li-email" type="email" placeholder="輸入 Email">
+    <label>密碼</label><input id="li-pw" type="password" placeholder="輸入密碼">
+    <div id="li-err" class="alert err" style="display:none"></div>
+    <button class="btn pri" onclick="doLogin()"><i class="ti ti-login"></i> 登入</button>
+  </div>
+  <div id="f-rg" class="card" style="display:none">
+    <div id="rg-err" class="alert err" style="display:none"></div>
+    <div id="rg-ok" class="alert ok" style="display:none"></div>
+    <label>姓名</label><input id="rg-name" placeholder="老闆姓名">
+    <label>電子郵件</label><input id="rg-email" type="email" placeholder="設定 Email">
+    <label>密碼</label><input id="rg-pw" type="password" placeholder="至少6位">
+    <label>確認密碼</label><input id="rg-pw2" type="password" placeholder="再次輸入">
+    <button class="btn pri" onclick="doReg()"><i class="ti ti-user-plus"></i> 建立老闆帳號</button>
+  </div>
+</div>
+
+<!-- ══════ 老闆後台 ══════ -->
+<div id="pg-boss" class="screen">
+  <div class="row" style="margin:.5rem 0 1rem">
+    <div><h1>管理後台</h1><p class="meta" id="bwelcome"></p></div>
+    <button class="btn sm dan" onclick="logout()"><i class="ti ti-logout"></i> 登出</button>
+  </div>
+  <div class="nav">
+    <button class="nb on" onclick="bTab(this,'b-ov')"><i class="ti ti-layout-dashboard"></i> 總覽</button>
+    <button class="nb" onclick="bTab(this,'b-emp')"><i class="ti ti-users"></i> 員工</button>
+    <button class="nb" onclick="bTab(this,'b-clk')"><i class="ti ti-clock-edit"></i> 打卡管理</button>
+    <button class="nb" onclick="bTab(this,'b-ins')"><i class="ti ti-shield-check"></i> 勞健保</button>
+    <button class="nb" onclick="bTab(this,'b-dbl')"><i class="ti ti-star"></i> 雙薪日</button>
+    <button class="nb" onclick="bTab(this,'b-day')"><i class="ti ti-calendar"></i> 每日明細</button>
+  </div>
+  <div id="b-ov" class="sec on">
+    <div class="sg">
+      <div class="st"><div class="n" id="ov-tot">0</div><div class="l">員工總數</div></div>
+      <div class="st"><div class="n" id="ov-in">0</div><div class="l">目前上班中</div></div>
+      <div class="st"><div class="n" id="ov-hrs">0</div><div class="l">今日總工時(h)</div></div>
+      <div class="st"><div class="n" id="ov-pay">$0</div><div class="l">今日薪資合計</div></div>
+    </div>
+    <div class="card"><h3>員工打卡狀態</h3><div id="ov-list"></div></div>
+  </div>
+  <div id="b-emp" class="sec">
+    <div class="card">
+      <h3>新增員工帳號</h3>
+      <label>姓名</label><input id="ne-name" placeholder="員工姓名">
+      <label>電子郵件</label><input id="ne-email" type="email" placeholder="員工 Email">
+      <label>密碼</label><input id="ne-pw" type="password" placeholder="登入密碼（至少6位）">
+      <label>時薪（元）</label><input id="ne-wage" type="number" placeholder="例：180">
+      <div id="ne-err" class="alert err" style="display:none"></div>
+      <button class="btn pri" onclick="addEmp()"><i class="ti ti-plus"></i> 新增員工</button>
+    </div>
+    <div class="card">
+      <h3>員工清單</h3>
+      <p class="meta" style="margin-bottom:10px">點擊展開可修改設定</p>
+      <div id="emp-list"></div>
+    </div>
+  </div>
+  <div id="b-clk" class="sec">
+    <div class="card">
+      <h3>新增打卡紀錄</h3>
+      <div class="g2" style="margin-bottom:8px">
+        <div><label>員工</label><select id="ca-emp" style="margin:0"></select></div>
+        <div><label>日期</label><input type="date" id="ca-date" style="margin:0"></div>
+        <div><label>上班時間</label><input type="time" id="ca-in" style="margin:0"></div>
+        <div><label>下班時間</label><input type="time" id="ca-out" style="margin:0"></div>
+      </div>
+      <p class="meta" style="margin-bottom:8px">下班時間可留空</p>
+      <div id="ca-err" class="alert err" style="display:none"></div>
+      <button class="btn pri" onclick="addRec()"><i class="ti ti-plus"></i> 新增紀錄</button>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">查詢 / 修改</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <select id="cf-emp" onchange="renderCM()" style="margin:0;width:auto"></select>
+          <input type="date" id="cf-date" onchange="renderCM()" style="margin:0;width:auto">
+        </div>
+      </div>
+      <div id="cm-list"></div>
+    </div>
+  </div>
+  <div id="b-ins" class="sec">
+    <div class="card">
+      <h3>各員工勞健保費（月）</h3>
+      <p class="meta" style="margin-bottom:12px">每位員工獨立設定，填固定金額</p>
+      <div id="ins-list"></div>
+    </div>
+  </div>
+  <div id="b-dbl" class="sec">
+    <div class="card">
+      <h3>雙薪日設定</h3>
+      <p class="meta" style="margin-bottom:12px">雙薪日薪資 × 2，勞健保不變</p>
+      <div class="sub">
+        <div class="gtl">固定每週雙薪日</div>
+        <div class="wg" id="wg"></div>
+      </div>
+      <div class="sub">
+        <div class="gtl">指定特定日期</div>
+        <div class="row" style="margin-bottom:8px">
+          <input type="date" id="dbl-d" style="margin:0;flex:1">
+          <button class="btn sm pri" onclick="addDbl()"><i class="ti ti-plus"></i> 新增</button>
+        </div>
+        <div id="dbl-chips"></div>
+      </div>
+    </div>
+    <div class="card"><h3>本月雙薪日預覽</h3><div id="dbl-prev"></div></div>
+  </div>
+  <div id="b-day" class="sec">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="row">
+        <div><h3 style="margin-bottom:2px">每日薪水明細</h3><p class="meta">點擊展開</p></div>
+        <select id="df-emp" onchange="renderDay()" style="margin:0;width:auto"></select>
+      </div>
+    </div>
+    <div class="card"><div id="day-list"></div></div>
+  </div>
+</div>
+
+<!-- ══════ 員工介面 ══════ -->
+<div id="pg-emp" class="screen">
+  <div class="row" style="margin:.5rem 0 1rem">
+    <div><h1 id="en"></h1><p class="meta" id="edate"></p></div>
+    <button class="btn sm dan" onclick="logout()"><i class="ti ti-logout"></i> 登出</button>
+  </div>
+  <div class="nav">
+    <button class="nb on" onclick="eTab(this,'e-clk')"><i class="ti ti-clock"></i> 打卡</button>
+    <button class="nb" onclick="eTab(this,'e-hist')"><i class="ti ti-list"></i> 紀錄</button>
+    <button class="nb" onclick="eTab(this,'e-sal')"><i class="ti ti-coin"></i> 薪資</button>
+  </div>
+  <div id="e-clk" class="sec on">
+    <div class="card" style="text-align:center">
+      <p class="meta">現在時間</p>
+      <div class="clock" id="now-t">--:--:--</div>
+      <div id="dbl-notice" class="alert info" style="display:none"></div>
+      <div id="clk-st" class="alert info" style="margin-bottom:1rem">今日尚未打卡</div>
+      <button id="clk-btn" class="btn suc" onclick="doClock()">
+        <i class="ti ti-player-play"></i> 上班打卡
+      </button>
+    </div>
+    <div class="card">
+      <h3>今日工時</h3>
+      <div class="sg">
+        <div class="st"><div class="n" id="td-in">--</div><div class="l">上班時間</div></div>
+        <div class="st"><div class="n" id="td-out">--</div><div class="l">下班時間</div></div>
+        <div class="st"><div class="n" id="td-h">0</div><div class="l">工時（小時）</div></div>
+        <div class="st"><div class="n" id="td-p">$0</div><div class="l">今日薪資</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="e-hist" class="sec">
+    <div class="card"><h3>打卡紀錄</h3><div id="hist"></div></div>
+  </div>
+  <div id="e-sal" class="sec">
+    <div class="card"><h3>本月薪資試算</h3><div id="sal"></div></div>
+  </div>
+</div>
+
+<!-- ══════ 編輯打卡 Modal ══════ -->
+<div id="modal">
+  <div class="mbox">
+    <div class="row" style="margin-bottom:1rem">
+      <h3 id="modal-t">修改打卡</h3>
+      <button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="modal-body"></div>
+    <div id="modal-err" class="alert err" style="display:none;margin-top:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn dan sm" onclick="delRec()" style="flex:1"><i class="ti ti-trash"></i> 刪除</button>
+      <button class="btn pri sm" onclick="saveModal()" style="flex:1"><i class="ti ti-check"></i> 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, getDocs, addDoc, query, where, onSnapshot
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── Firebase 設定 ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDiH3hlcgluGHzKMS9oTix9q3cbzSj5SfM",
+  authDomain: "payment-7c91c.firebaseapp.com",
+  projectId: "payment-7c91c",
+  storageBucket: "payment-7c91c.firebasestorage.app",
+  messagingSenderId: "548830490147",
+  appId: "1:548830490147:web:8e71d43b95406af92a8b96"
+};
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// ════════════════════════════════════════
+//  Firestore 結構：
+//  users/{uid}         → { name, role:'boss'|'emp', bossId?, wage?, ins?, email }
+//  bosses/{bossId}/settings → { dblWd:[], dblDs:[] }
+//  bosses/{bossId}/employees/{empId} → 同 users doc（冗餘方便查詢）
+//  bosses/{bossId}/records/{recId}   → { empId, date, inT, outT, edited? }
+// ════════════════════════════════════════
+
+const WD = ['日','一','二','三','四','五','六'];
+let me = null;        // 目前登入使用者資料
+let bossId = null;    // 目前所屬老闆 uid
+let settings = {};    // 雙薪日設定
+let employees = [];   // 員工清單（老闆用）
+let records = [];     // 打卡紀錄
+let ticker = null;
+let editId = null;
+let unsubRecs = null; // Firestore listener
+
+// ── 畫面 ──
+function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function loading(show){ document.getElementById('loading').classList.toggle('hide',!show); }
+function showE(id,msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
+function hideE(id){ document.getElementById(id).style.display='none'; }
+
+// ── 登入頁 ──
+window.showLogin = function(role){
+  document.getElementById('lt').textContent = role==='boss'?'老闆':'員工';
+  document.getElementById('li-email').value=''; document.getElementById('li-pw').value='';
+  hideE('li-err');
+  document.getElementById('login-tabs').style.display = role==='boss'?'flex':'none';
+  swTab('li'); clearReg();
+  document.getElementById('pg-login').dataset.role = role;
+  go('pg-login');
+};
+window.swTab = function(t){
+  document.getElementById('tab-li').classList.toggle('on',t==='li');
+  document.getElementById('tab-rg').classList.toggle('on',t==='rg');
+  document.getElementById('f-li').style.display=t==='li'?'block':'none';
+  document.getElementById('f-rg').style.display=t==='rg'?'block':'none';
+};
+function clearReg(){ ['rg-name','rg-email','rg-pw','rg-pw2'].forEach(id=>{ const e=document.getElementById(id); if(e)e.value=''; }); hideE('rg-err'); hideE('rg-ok'); }
+
+// ── 登入 ──
+window.doLogin = async function(){
+  const email = document.getElementById('li-email').value.trim();
+  const pw    = document.getElementById('li-pw').value;
+  const role  = document.getElementById('pg-login').dataset.role;
+  hideE('li-err');
+  if(!email||!pw){ showE('li-err','請填寫 Email 和密碼'); return; }
+  loading(true);
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pw);
+    const uDoc = await getDoc(doc(db,'users',cred.user.uid));
+    if(!uDoc.exists()){ showE('li-err','帳號資料異常'); await signOut(auth); loading(false); return; }
+    const uData = uDoc.data();
+    if(uData.role !== role){ showE('li-err','請選擇正確的登入身份'); await signOut(auth); loading(false); return; }
+  } catch(e){
+    loading(false);
+    showE('li-err', e.code==='auth/invalid-credential'?'帳號或密碼錯誤':'登入失敗：'+e.message);
+  }
+};
+
+// ── 老闆註冊 ──
+window.doReg = async function(){
+  const name  = document.getElementById('rg-name').value.trim();
+  const email = document.getElementById('rg-email').value.trim();
+  const pw    = document.getElementById('rg-pw').value;
+  const pw2   = document.getElementById('rg-pw2').value;
+  hideE('rg-err'); hideE('rg-ok');
+  if(!name)  return showE('rg-err','請填寫姓名');
+  if(!email) return showE('rg-err','請填寫 Email');
+  if(pw.length<6) return showE('rg-err','密碼至少6位');
+  if(pw!==pw2) return showE('rg-err','兩次密碼不符');
+  loading(true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    const uid  = cred.user.uid;
+    await setDoc(doc(db,'users',uid), { name, email, role:'boss' });
+    await setDoc(doc(db,'bosses',uid,'settings','config'), { dblWd:[], dblDs:[] });
+    // 建立後立即登出讓使用者重新登入
+    await signOut(auth);
+    loading(false);
+    const ok = document.getElementById('rg-ok');
+    ok.textContent=`老闆帳號「${email}」建立成功！請切換到登入頁面登入。`;
+    ok.style.display='block';
+    clearReg();
+  } catch(e){
+    loading(false);
+    showE('rg-err', e.code==='auth/email-already-in-use'?'此 Email 已被使用':'註冊失敗：'+e.message);
+  }
+};
+
+// ── Auth 狀態監聽 ──
+onAuthStateChanged(auth, async (user) => {
+  if(!user){ loading(false); go('pg-home'); return; }
+  loading(true);
+  try {
+    const uDoc = await getDoc(doc(db,'users',user.uid));
+    if(!uDoc.exists()){ await signOut(auth); return; }
+    me = { id:user.uid, ...uDoc.data() };
+    if(me.role==='boss'){
+      bossId = me.id;
+      await loadBossData();
+      initBoss();
+    } else {
+      bossId = me.bossId;
+      await loadEmpData();
+      initEmp();
+    }
+  } catch(e){
+    loading(false);
+    console.error(e);
+  }
+});
+
+window.logout = async function(){
+  if(ticker) clearInterval(ticker);
+  if(unsubRecs) unsubRecs();
+  await signOut(auth);
+};
+
+// ── 工具 ──
+function today(){ return new Date().toISOString().slice(0,10); }
+function ts2t(ts){ if(!ts) return '--'; return new Date(ts).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}); }
+function ts2hhmm(ts){ if(!ts) return ''; const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function dts(date,hhmm){ if(!hhmm) return null; return new Date(date+'T'+hhmm+':00').getTime(); }
+function rid(){ return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function isD(ds){ return (settings.dblDs||[]).includes(ds)||(settings.dblWd||[]).includes(new Date(ds+'T00:00:00').getDay()); }
+function empIns(e){ return ((e.ins&&e.ins.le)||0)+((e.ins&&e.ins.he)||0); }
+
+// ── 載入老闆資料 ──
+async function loadBossData(){
+  // settings
+  const sDoc = await getDoc(doc(db,'bosses',bossId,'settings','config'));
+  settings = sDoc.exists() ? sDoc.data() : {dblWd:[],dblDs:[]};
+  // employees
+  const eSnap = await getDocs(collection(db,'bosses',bossId,'employees'));
+  employees = eSnap.docs.map(d=>({id:d.id,...d.data()}));
+  // records (realtime)
+  subscribeRecords();
+}
+async function loadEmpData(){
+  const sDoc = await getDoc(doc(db,'bosses',bossId,'settings','config'));
+  settings = sDoc.exists() ? sDoc.data() : {dblWd:[],dblDs:[]};
+  subscribeRecords();
+}
+function subscribeRecords(){
+  if(unsubRecs) unsubRecs();
+  unsubRecs = onSnapshot(collection(db,'bosses',bossId,'records'), snap=>{
+    records = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(me.role==='boss'){ renderOv(); renderCM(); renderDay(); }
+    else { updStats(); }
+  });
+}
+
+// ── 儲存 settings ──
+async function saveSettings(){
+  await setDoc(doc(db,'bosses',bossId,'settings','config'), settings);
+}
+
+// ════════ 老闆後台 ════════
+function initBoss(){
+  document.getElementById('bwelcome').textContent='歡迎，'+me.name;
+  renderOv(); renderEmpList(); fillCaEmp(); fillCfEmp();
+  renderIns(); renderWg(); renderDblChips(); renderDblPrev(); fillDf(); renderDay();
+  loading(false); go('pg-boss');
+}
+
+window.bTab = function(btn,id){
+  document.querySelectorAll('#pg-boss .nb').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  document.querySelectorAll('#pg-boss .sec').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on');
+  if(id==='b-ov')  renderOv();
+  if(id==='b-emp') renderEmpList();
+  if(id==='b-clk') { fillCaEmp(); fillCfEmp(); renderCM(); }
+  if(id==='b-ins') renderIns();
+  if(id==='b-dbl') { renderWg(); renderDblChips(); renderDblPrev(); }
+  if(id==='b-day') { fillDf(); renderDay(); }
+};
+
+// 總覽
+function renderOv(){
+  document.getElementById('ov-tot').textContent=employees.length;
+  const td=today(), tr=records.filter(r=>r.date===td);
+  const inSet=new Set(tr.filter(r=>r.inT&&!r.outT).map(r=>r.empId));
+  document.getElementById('ov-in').textContent=inSet.size;
+  let hrs=0,pay=0;
+  tr.filter(r=>r.outT).forEach(r=>{ const h=(r.outT-r.inT)/3600000; hrs+=h; const e=employees.find(x=>x.id===r.empId); if(e) pay+=h*e.wage*(isD(td)?2:1); });
+  document.getElementById('ov-hrs').textContent=hrs.toFixed(1);
+  document.getElementById('ov-pay').textContent='$'+Math.round(pay);
+  document.getElementById('ov-list').innerHTML=employees.map(e=>{
+    const er=tr.filter(r=>r.empId===e.id);
+    const open=er.some(r=>r.inT&&!r.outT), done=er.some(r=>r.outT);
+    let st='<span class="tag pend">未打卡</span>';
+    if(open) st='<span class="tag in">上班中</span>';
+    else if(done) st='<span class="tag out">已下班</span>';
+    const dbl=isD(td)?'<span class="badge a" style="margin-left:4px">雙薪</span>':'';
+    return `<div class="er"><div class="av">${e.name[0]}</div><div style="flex:1"><p style="font-weight:600">${e.name}${dbl}</p><p class="meta">時薪 $${e.wage} · 扣 $${empIns(e)}/月</p></div>${st}</div>`;
+  }).join('')||'<p class="meta" style="padding:1rem;text-align:center">尚無員工</p>';
+}
+
+// 員工清單
+function renderEmpList(){
+  document.getElementById('emp-list').innerHTML=employees.length?employees.map(e=>`
+    <div class="ec" id="ec-${e.id}">
+      <div class="ec-h" onclick="toggleEc('${e.id}')">
+        <div class="av">${e.name[0]}</div>
+        <div style="flex:1">
+          <p style="font-weight:600">${e.name}</p>
+          <p class="meta">${e.email||''} · 時薪 $${e.wage} · 勞保扣 $${(e.ins&&e.ins.le)||0} · 健保扣 $${(e.ins&&e.ins.he)||0}</p>
+        </div>
+        <i class="ti ti-chevron-down" style="color:var(--tx2)"></i>
+      </div>
+      <div class="ec-b">
+        <div class="gtl" style="margin-bottom:8px">薪資</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="meta">時薪</span>
+          <input class="xs" type="number" id="wg-${e.id}" value="${e.wage}">
+          <span class="meta">元/時</span>
+          <button class="btn sm war" onclick="saveWage('${e.id}')"><i class="ti ti-check"></i> 儲存</button>
+        </div>
+        <div class="gtl">勞健保（月）</div>
+        <div class="ir" style="font-size:11px;color:var(--tx2);font-weight:700;padding-bottom:6px"><span>項目</span><span style="text-align:center">員工扣</span><span style="text-align:center">公司付</span></div>
+        <div class="ir"><span class="meta">勞保</span><input class="xs" type="number" id="le-${e.id}" value="${(e.ins&&e.ins.le)||0}"><input class="xs" type="number" id="lb-${e.id}" value="${(e.ins&&e.ins.lb)||0}"></div>
+        <div class="ir"><span class="meta">健保</span><input class="xs" type="number" id="he-${e.id}" value="${(e.ins&&e.ins.he)||0}"><input class="xs" type="number" id="hb-${e.id}" value="${(e.ins&&e.ins.hb)||0}"></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+          <button class="btn sm dan" onclick="removeEmp('${e.id}')"><i class="ti ti-trash"></i> 刪除</button>
+          <button class="btn sm pri" onclick="saveIns('${e.id}')"><i class="ti ti-check"></i> 儲存勞健保</button>
+        </div>
+        <div id="if-${e.id}" class="flash"><i class="ti ti-check"></i> 已儲存</div>
+      </div>
+    </div>`).join(''):'<p class="meta" style="text-align:center;padding:1rem">尚無員工</p>';
+}
+window.toggleEc = function(id){ document.getElementById('ec-'+id).classList.toggle('open'); };
+
+window.saveWage = async function(id){
+  const v=parseFloat(document.getElementById('wg-'+id).value);
+  if(isNaN(v)||v<0){ alert('請輸入有效時薪'); return; }
+  await updateDoc(doc(db,'bosses',bossId,'employees',id),{wage:v});
+  await updateDoc(doc(db,'users',id),{wage:v});
+  employees.find(e=>e.id===id).wage=v;
+  renderEmpList(); renderOv();
+};
+
+window.saveIns = async function(id){
+  const ins={
+    le:parseFloat(document.getElementById('le-'+id).value)||0,
+    lb:parseFloat(document.getElementById('lb-'+id).value)||0,
+    he:parseFloat(document.getElementById('he-'+id).value)||0,
+    hb:parseFloat(document.getElementById('hb-'+id).value)||0
+  };
+  await updateDoc(doc(db,'bosses',bossId,'employees',id),{ins});
+  await updateDoc(doc(db,'users',id),{ins});
+  const emp=employees.find(e=>e.id===id); if(emp) emp.ins=ins;
+  const f=document.getElementById('if-'+id); f.style.display='block';
+  setTimeout(()=>{ f.style.display='none'; renderEmpList(); document.getElementById('ec-'+id).classList.add('open'); },1500);
+  renderIns();
+};
+
+window.addEmp = async function(){
+  const name  = document.getElementById('ne-name').value.trim();
+  const email = document.getElementById('ne-email').value.trim();
+  const pw    = document.getElementById('ne-pw').value;
+  const wage  = parseFloat(document.getElementById('ne-wage').value)||0;
+  hideE('ne-err');
+  if(!name||!email||!pw){ showE('ne-err','請填寫完整資料'); return; }
+  if(pw.length<6){ showE('ne-err','密碼至少6位'); return; }
+  loading(true);
+  try {
+    // 建立 Firebase Auth 帳號
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    const empUid = cred.user.uid;
+    const empData = { name, email, role:'emp', bossId, wage, ins:{le:0,lb:0,he:0,hb:0} };
+    await setDoc(doc(db,'users',empUid), empData);
+    await setDoc(doc(db,'bosses',bossId,'employees',empUid), empData);
+    employees.push({id:empUid,...empData});
+    // 新增員工後老闆要重新登入（因為 createUser 會切換 auth 使用者）
+    await signInWithEmailAndPassword(auth, me.email, '');
+  } catch(e){
+    // createUserWithEmailAndPassword 不需要再登入，重新以老闆身份繼續
+    // 這裡用 onAuthStateChanged 重新初始化
+    loading(false);
+    if(e.code==='auth/email-already-in-use'){ showE('ne-err','此 Email 已被使用'); return; }
+    // 成功的話 auth 會切到新員工，需重新登入老闆
+    // 改用 Admin SDK 或直接重整頁面提示
+  }
+  // 重新以老闆帳號登入
+  loading(false);
+  ['ne-name','ne-email','ne-pw','ne-wage'].forEach(id=>document.getElementById(id).value='');
+  renderEmpList(); renderOv(); fillCaEmp(); fillCfEmp(); fillDf(); renderIns();
+  alert('員工帳號已建立！員工可用 Email 和密碼登入。');
+};
+
+window.removeEmp = async function(id){
+  if(!confirm('確定刪除此員工的所有資料？')) return;
+  loading(true);
+  await deleteDoc(doc(db,'bosses',bossId,'employees',id));
+  // 注意：Firebase Auth 使用者需透過 Admin SDK 刪除，這裡只刪 Firestore 資料
+  employees=employees.filter(e=>e.id!==id);
+  loading(false);
+  renderEmpList(); renderOv(); fillCaEmp(); fillCfEmp(); fillDf(); renderDay(); renderIns();
+};
+
+// 勞健保頁
+function renderIns(){
+  document.getElementById('ins-list').innerHTML=employees.length?employees.map(e=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="av avs">${e.name[0]}</div>
+        <span style="font-weight:600">${e.name}</span><span class="meta">時薪 $${e.wage}</span>
+      </div>
+      <div style="background:var(--sur2);border-radius:var(--rs);padding:10px 12px">
+        <div class="ir" style="font-size:11px;color:var(--tx2);font-weight:700;padding-bottom:6px"><span>項目</span><span style="text-align:center">員工扣</span><span style="text-align:center">公司付</span></div>
+        <div class="ir"><span class="meta">勞保</span><input class="xs" type="number" id="ip-le-${e.id}" value="${(e.ins&&e.ins.le)||0}"><input class="xs" type="number" id="ip-lb-${e.id}" value="${(e.ins&&e.ins.lb)||0}"></div>
+        <div class="ir"><span class="meta">健保</span><input class="xs" type="number" id="ip-he-${e.id}" value="${(e.ins&&e.ins.he)||0}"><input class="xs" type="number" id="ip-hb-${e.id}" value="${(e.ins&&e.ins.hb)||0}"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="meta" style="font-size:12px">月扣：$${empIns(e)}</span>
+          <button class="btn sm pri" onclick="saveInsP('${e.id}')"><i class="ti ti-check"></i> 儲存</button>
+        </div>
+        <div id="ipf-${e.id}" class="flash"><i class="ti ti-check"></i> 已儲存</div>
+      </div>
+    </div>`)
+  .join(''):'<p class="meta" style="text-align:center;padding:1rem">尚無員工</p>';
+}
+window.saveInsP = async function(id){
+  const ins={
+    le:parseFloat(document.getElementById('ip-le-'+id).value)||0,
+    lb:parseFloat(document.getElementById('ip-lb-'+id).value)||0,
+    he:parseFloat(document.getElementById('ip-he-'+id).value)||0,
+    hb:parseFloat(document.getElementById('ip-hb-'+id).value)||0
+  };
+  await updateDoc(doc(db,'bosses',bossId,'employees',id),{ins});
+  await updateDoc(doc(db,'users',id),{ins});
+  const emp=employees.find(e=>e.id===id); if(emp) emp.ins=ins;
+  const f=document.getElementById('ipf-'+id); f.style.display='block';
+  setTimeout(()=>{ f.style.display='none'; renderIns(); },1500);
+  renderEmpList();
+};
+
+// 打卡管理
+function fillCaEmp(){
+  const sel=document.getElementById('ca-emp'); if(!sel) return;
+  sel.innerHTML=employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+function fillCfEmp(){
+  const sel=document.getElementById('cf-emp'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">全部員工</option>';
+  employees.forEach(e=>sel.innerHTML+=`<option value="${e.id}"${e.id===cur?' selected':''}>${e.name}</option>`);
+}
+window.renderCM = function(){
+  const fe=document.getElementById('cf-emp').value;
+  const fd=document.getElementById('cf-date').value;
+  let recs=[...records];
+  if(fe) recs=recs.filter(r=>r.empId===fe);
+  if(fd) recs=recs.filter(r=>r.date===fd);
+  recs.sort((a,b)=>b.date.localeCompare(a.date)||(b.inT||0)-(a.inT||0));
+  const el=document.getElementById('cm-list');
+  if(!recs.length){ el.innerHTML='<p class="meta" style="text-align:center;padding:1rem">無打卡紀錄</p>'; return; }
+  el.innerHTML=recs.map(r=>{
+    const emp=employees.find(e=>e.id===r.empId);
+    const h=r.outT?((r.outT-r.inT)/3600000).toFixed(2)+'h':'進行中';
+    const ed=r.edited?'<span class="badge e" style="margin-left:4px">已修改</span>':'';
+    return `<div class="cr">
+      <div>
+        <p style="font-weight:600;font-size:13px">${emp?emp.name:'?'} · ${r.date}${ed}</p>
+        <p class="meta" style="font-size:12px">${ts2t(r.inT)} → ${r.outT?ts2t(r.outT):'--'} · ${h}</p>
+      </div>
+      <button class="btn sm war" onclick="openModal('${r.id}')"><i class="ti ti-edit"></i> 修改</button>
+    </div>`;
+  }).join('');
+};
+window.addRec = async function(){
+  const empId=document.getElementById('ca-emp').value;
+  const date=document.getElementById('ca-date').value;
+  const inH=document.getElementById('ca-in').value;
+  const outH=document.getElementById('ca-out').value;
+  hideE('ca-err');
+  if(!empId||!date||!inH){ showE('ca-err','請填寫員工、日期、上班時間'); return; }
+  const inT=dts(date,inH), outT=outH?dts(date,outH):null;
+  if(outT&&outT<=inT){ showE('ca-err','下班時間必須晚於上班時間'); return; }
+  await addDoc(collection(db,'bosses',bossId,'records'),{empId,date,inT,outT:outT||null,edited:true});
+  ['ca-date','ca-in','ca-out'].forEach(id=>document.getElementById(id).value='');
+};
+
+// Modal
+window.openModal = function(id){
+  editId=id;
+  const r=records.find(x=>x.id===id); if(!r) return;
+  const emp=employees.find(e=>e.id===r.empId);
+  document.getElementById('modal-t').textContent=`修改：${emp?emp.name:'?'} · ${r.date}`;
+  hideE('modal-err');
+  document.getElementById('modal-body').innerHTML=`
+    <div class="g2" style="margin-bottom:8px">
+      <div><label>日期</label><input type="date" id="md-date" value="${r.date}" class="md" style="width:100%"></div>
+      <div></div>
+      <div><label>上班時間</label><input type="time" id="md-in" value="${ts2hhmm(r.inT)}" class="md" style="width:100%"></div>
+      <div><label>下班時間</label><input type="time" id="md-out" value="${ts2hhmm(r.outT)}" class="md" style="width:100%"></div>
+    </div>
+    <p class="meta">下班時間留空表示尚未下班</p>`;
+  document.getElementById('modal').classList.add('open');
+};
+window.closeModal = function(){ document.getElementById('modal').classList.remove('open'); editId=null; };
+window.saveModal = async function(){
+  const r=records.find(x=>x.id===editId); if(!r) return;
+  const date=document.getElementById('md-date').value;
+  const inH=document.getElementById('md-in').value;
+  const outH=document.getElementById('md-out').value;
+  hideE('modal-err');
+  if(!date||!inH){ showE('modal-err','請填寫日期與上班時間'); return; }
+  const inT=dts(date,inH), outT=outH?dts(date,outH):null;
+  if(outT&&outT<=inT){ showE('modal-err','下班時間必須晚於上班時間'); return; }
+  await updateDoc(doc(db,'bosses',bossId,'records',editId),{date,inT,outT:outT||null,edited:true});
+  closeModal();
+};
+window.delRec = async function(){
+  if(!confirm('確定刪除此筆打卡紀錄？')) return;
+  await deleteDoc(doc(db,'bosses',bossId,'records',editId));
+  closeModal();
+};
+
+// 雙薪日
+function renderWg(){ document.getElementById('wg').innerHTML=WD.map((d,i)=>`<button class="wb${(settings.dblWd||[]).includes(i)?' on':''}" onclick="togWd(${i})">${d}</button>`).join(''); }
+window.togWd = async function(i){
+  const wd=settings.dblWd||[];
+  settings.dblWd=wd.includes(i)?wd.filter(x=>x!==i):[...wd,i];
+  await saveSettings(); renderWg(); renderDblPrev();
+};
+window.addDbl = async function(){
+  const v=document.getElementById('dbl-d').value; if(!v) return;
+  const ds=settings.dblDs||[];
+  if(!ds.includes(v)){ settings.dblDs=[...ds,v].sort(); }
+  document.getElementById('dbl-d').value='';
+  await saveSettings(); renderDblChips(); renderDblPrev();
+};
+window.remDbl = async function(d){
+  settings.dblDs=(settings.dblDs||[]).filter(x=>x!==d);
+  await saveSettings(); renderDblChips(); renderDblPrev();
+};
+function renderDblChips(){ document.getElementById('dbl-chips').innerHTML=(settings.dblDs||[]).map(d=>`<span class="chip">${d}<button onclick="remDbl('${d}')"><i class="ti ti-x" style="font-size:12px"></i></button></span>`).join('')||'<p class="meta">尚未指定特定日期</p>'; }
+function renderDblPrev(){
+  const now=new Date(),yr=now.getFullYear(),mo=now.getMonth(),days=new Date(yr,mo+1,0).getDate(),dbls=[];
+  for(let d=1;d<=days;d++){ const dt=new Date(yr,mo,d),ds=dt.toISOString().slice(0,10); if(isD(ds)) dbls.push({ds,wd:WD[dt.getDay()]}); }
+  const el=document.getElementById('dbl-prev');
+  if(!dbls.length){ el.innerHTML='<p class="meta" style="text-align:center;padding:1rem">本月無雙薪日</p>'; return; }
+  el.innerHTML=dbls.map(x=>`<div class="li"><span style="font-weight:600">${x.ds}</span><span class="tag dbl">週${x.wd} · 雙薪</span></div>`).join('');
+}
+
+// 每日明細
+function fillDf(){
+  const sel=document.getElementById('df-emp'); const cur=sel.value;
+  sel.innerHTML='<option value="">全部員工</option>';
+  employees.forEach(e=>sel.innerHTML+=`<option value="${e.id}"${e.id===cur?' selected':''}>${e.name}</option>`);
+}
+window.renderDay = function(){
+  const flt=document.getElementById('df-emp').value;
+  let recs=records.filter(r=>r.outT);
+  if(flt) recs=recs.filter(r=>r.empId===flt);
+  const byD={}; recs.forEach(r=>{ if(!byD[r.date]) byD[r.date]=[]; byD[r.date].push(r); });
+  const dates=Object.keys(byD).sort().reverse();
+  const el=document.getElementById('day-list');
+  if(!dates.length){ el.innerHTML='<p class="meta" style="text-align:center;padding:1rem">尚無打卡紀錄</p>'; return; }
+  el.innerHTML=dates.map(date=>{
+    const dr=byD[date], dbl=isD(date);
+    let dH=0,dG=0,dN=0;
+    const byE={}; dr.forEach(r=>{ if(!byE[r.empId]) byE[r.empId]=[]; byE[r.empId].push(r); });
+    const rows=Object.entries(byE).map(([eid,segs])=>{
+      const emp=employees.find(e=>e.id===eid); if(!emp) return '';
+      const ms=segs.reduce((s,r)=>s+(r.outT-r.inT),0);
+      const hrs=ms/3600000, m=dbl?2:1, gross=hrs*emp.wage*m, ded=empIns(emp), net=gross-ded;
+      dH+=hrs; dG+=gross; dN+=net;
+      const hasEd=segs.some(r=>r.edited);
+      const si=segs.length>1?segs.map((r,i)=>`第${i+1}段:${ts2t(r.inT)}–${ts2t(r.outT)}`).join('　'):`${ts2t(segs[0].inT)}–${ts2t(segs[0].outT)}`;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--bd)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="av avs">${emp.name[0]}</div>
+          <div>
+            <p style="font-size:13px;font-weight:600">${emp.name}${segs.length>1?` <span class="badge b">${segs.length}段</span>`:''}${hasEd?` <span class="badge e">已修改</span>`:''}</p>
+            <p class="meta" style="font-size:11px">${si} · ${hrs.toFixed(2)}h${dbl?' ×2':''}</p>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <p style="font-size:13px;font-weight:600">實領 $${Math.round(net)}</p>
+          <p class="meta" style="font-size:11px">應付 $${Math.round(gross)}</p>
+        </div>
+      </div>`;
+    }).join('');
+    const wd=WD[new Date(date+'T00:00:00').getDay()];
+    const db2=dbl?`<span class="badge a" style="margin-left:6px">雙薪日</span>`:'';
+    return `<div class="dr" id="dy-${date}">
+      <div class="dh" onclick="togDay('${date}')">
+        <div><p style="font-weight:600">${date}${db2} <span class="meta">週${wd}</span></p>
+        <p class="meta">${Object.keys(byE).length}位員工 · ${dH.toFixed(2)}h</p></div>
+        <div style="text-align:right">
+          <p style="font-weight:600;color:var(--blu)">實發 $${Math.round(dN)}</p>
+          <p class="meta">應付 $${Math.round(dG)}</p>
+          <i class="ti ti-chevron-down" style="color:var(--tx2)"></i>
+        </div>
+      </div>
+      <div class="dd">${rows}
+        <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:4px">
+          <span style="font-size:13px;font-weight:600">當日合計</span>
+          <div style="text-align:right">
+            <span style="font-weight:600;color:var(--blu)">實發 $${Math.round(dN)}</span>
+            <span class="meta" style="margin-left:8px">應付 $${Math.round(dG)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+};
+window.togDay = function(d){ document.getElementById('dy-'+d).classList.toggle('open'); };
+
+// ════════ 員工介面 ════════
+function initEmp(){
+  document.getElementById('en').textContent=me.name;
+  document.getElementById('edate').textContent=new Date().toLocaleDateString('zh-TW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  updClock();
+  if(ticker) clearInterval(ticker);
+  ticker=setInterval(()=>{ document.getElementById('now-t').textContent=new Date().toLocaleTimeString('zh-TW'); updStats(); },1000);
+  updStats(); loading(false); go('pg-emp');
+}
+window.eTab = function(btn,id){
+  document.querySelectorAll('#pg-emp .nb').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  document.querySelectorAll('#pg-emp .sec').forEach(s=>s.classList.remove('on')); document.getElementById(id).classList.add('on');
+  if(id==='e-hist') renderHist();
+  if(id==='e-sal')  renderSal();
+};
+
+function myRecs(d){ return records.filter(r=>r.empId===me.id&&r.date===(d||today())); }
+function openRec(){ return myRecs().find(r=>r.inT&&!r.outT)||null; }
+function doneMs(){ return myRecs().filter(r=>r.outT).reduce((s,r)=>s+(r.outT-r.inT),0); }
+
+function updClock(){
+  const td=today(), op=openRec(), recs=myRecs();
+  const btn=document.getElementById('clk-btn'), st=document.getElementById('clk-st');
+  const n=document.getElementById('dbl-notice');
+  if(isD(td)){ n.style.display='block'; n.textContent='⭐ 今天是雙薪日，薪資 × 2！'; } else n.style.display='none';
+  if(op){
+    btn.className='btn dan'; btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-player-stop"></i> 下班打卡';
+    st.className='alert ok'; st.textContent='上班中 · '+ts2t(op.inT)+' 打卡（第'+recs.length+'段）';
+  } else if(!recs.length){
+    btn.className='btn suc'; btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-player-play"></i> 上班打卡';
+    st.className='alert info'; st.textContent='今日尚未打卡';
+  } else {
+    btn.className='btn suc'; btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-player-play"></i> 再次上班打卡';
+    st.className='alert info'; st.textContent='已下班，可再次打卡（共'+recs.length+'段）';
+  }
+}
+window.doClock = async function(){
+  const td=today(), op=openRec();
+  if(op){
+    await updateDoc(doc(db,'bosses',bossId,'records',op.id),{outT:Date.now()});
+  } else {
+    await addDoc(collection(db,'bosses',bossId,'records'),{empId:me.id,date:td,inT:Date.now(),outT:null});
+  }
+};
+function updStats(){
+  const td=today(), op=openRec(), recs=myRecs(), first=recs[0]||null;
+  const last=recs.filter(r=>r.outT).slice(-1)[0]||null;
+  document.getElementById('td-in').textContent=first?ts2t(first.inT):'--';
+  document.getElementById('td-out').textContent=op?'進行中':(last?ts2t(last.outT):'--');
+  let ms=doneMs(); if(op) ms+=Date.now()-op.inT;
+  const hrs=ms/3600000, m=isD(td)?2:1, gross=hrs*(me.wage||0)*m, ded=empIns(me);
+  document.getElementById('td-h').textContent=hrs.toFixed(2);
+  document.getElementById('td-p').textContent='$'+Math.round(gross-ded);
+  updClock();
+}
+
+function renderHist(){
+  const recs=records.filter(r=>r.empId===me.id);
+  const byD={}; recs.forEach(r=>{ if(!byD[r.date]) byD[r.date]=[]; byD[r.date].push(r); });
+  const dates=Object.keys(byD).sort().reverse();
+  const el=document.getElementById('hist');
+  if(!dates.length){ el.innerHTML='<p class="meta" style="text-align:center;padding:1rem">尚無打卡紀錄</p>'; return; }
+  el.innerHTML=dates.map(date=>{
+    const segs=byD[date], dbl=isD(date);
+    const ms=segs.filter(r=>r.outT).reduce((s,r)=>s+(r.outT-r.inT),0);
+    const hrs=ms/3600000, gross=hrs*(me.wage||0)*(dbl?2:1), net=gross-empIns(me);
+    const hasOp=segs.some(r=>!r.outT), hasEd=segs.some(r=>r.edited);
+    const db2=dbl?'<span class="badge a" style="margin-left:4px">雙薪</span>':'';
+    const ed2=hasEd?'<span class="badge e" style="margin-left:4px">老闆已修改</span>':'';
+    const multi=segs.length>1?` <span class="badge b">${segs.length}段</span>`:'';
+    const segRows=segs.map((r,i)=>
+      `<p class="meta" style="font-size:12px;margin-top:3px">第${i+1}段：${ts2t(r.inT)} → ${r.outT?ts2t(r.outT):'進行中'}${r.edited?' <span style="color:var(--amb)">✎ 老闆修改</span>':''}</p>`
+    ).join('');
+    return `<div class="li" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+        <p style="font-weight:600">${date}${db2}${ed2}${multi}</p>
+        <div style="text-align:right">
+          <p style="font-weight:600">${hasOp?'進行中':hrs.toFixed(2)+'h'}</p>
+          <p class="meta">${hrs>0?'$'+Math.round(net):''}</p>
+        </div>
+      </div>${segRows}
+    </div>`;
+  }).join('');
+}
+
+function renderSal(){
+  const recs=records.filter(r=>r.empId===me.id&&r.outT);
+  const uD=new Set(recs.map(r=>r.date));
+  let tH=0,tG=0;
+  uD.forEach(d=>{ const dr=recs.filter(r=>r.date===d); const ms=dr.reduce((s,r)=>s+(r.outT-r.inT),0); const h=ms/3600000; tH+=h; tG+=h*(me.wage||0)*(isD(d)?2:1); });
+  const ins=me.ins||{}, ded=(ins.le||0)+(ins.he||0), net=tG-ded;
+  document.getElementById('sal').innerHTML=`
+    <div class="sg" style="margin-bottom:1rem">
+      <div class="st"><div class="n">${uD.size}</div><div class="l">出勤天數</div></div>
+      <div class="st"><div class="n">${tH.toFixed(1)}h</div><div class="l">總工時</div></div>
+      <div class="st"><div class="n">$${Math.round(tG)}</div><div class="l">應付薪資</div></div>
+      <div class="st"><div class="n">$${ded}</div><div class="l">月扣款</div></div>
+    </div>
+    <div class="li"><div><p style="font-weight:600">勞保（員工自付）</p></div><p style="color:var(--red)">-$${ins.le||0}/月</p></div>
+    <div class="li"><div><p style="font-weight:600">健保（員工自付）</p></div><p style="color:var(--red)">-$${ins.he||0}/月</p></div>
+    <div class="divider"></div>
+    <div class="row">
+      <span style="font-weight:600;font-size:16px">實領薪資</span>
+      <span style="font-weight:700;font-size:20px;color:var(--blu)">$${Math.round(net)}</span>
+    </div>`;
+}
+
+// 初始化時鐘
+document.getElementById('now-t').textContent=new Date().toLocaleTimeString('zh-TW');
+</script>
+</body>
+</html>
